@@ -4,6 +4,7 @@ import hmac
 import hashlib
 import re
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from functools import wraps
@@ -208,6 +209,36 @@ def detect_image_type(file_storage):
 # Email
 # ──────────────────────────────────────────────────────────────
 
+class _IPv4OnlySMTP(smtplib.SMTP):
+    """smtplib.SMTP that connects over IPv4 only.
+
+    Some container platforms (e.g. Railway) can't route IPv6 egress. When the
+    mail server also has an AAAA record, the default resolver may pick IPv6 and
+    the connect fails with OSError errno 101 ("Network is unreachable"). Forcing
+    IPv4 sidesteps that. TLS still verifies against the original hostname because
+    ``self._host`` is unchanged — only the socket's address family is constrained.
+    """
+
+    def _get_socket(self, host, port, timeout):
+        last_err = None
+        for family, socktype, proto, _canon, sa in socket.getaddrinfo(
+                host, port, socket.AF_INET, socket.SOCK_STREAM):
+            sock = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                if isinstance(timeout, (int, float)):
+                    sock.settimeout(timeout)
+                if self.source_address:
+                    sock.bind(self.source_address)
+                sock.connect(sa)
+                return sock
+            except OSError as err:
+                last_err = err
+                if sock is not None:
+                    sock.close()
+        raise last_err if last_err else OSError(f"no IPv4 address for {host!r}")
+
+
 def _send_email(to_email, subject, body):
     """Send an email. Returns True on success, False on failure. No SMTP credentials
     or response payloads are ever logged."""
@@ -232,7 +263,7 @@ def _send_email(to_email, subject, body):
         msg.attach(MIMEText(body, 'plain'))
 
         stage = "connect"
-        with smtplib.SMTP(mail_server, mail_port, timeout=10) as server:
+        with _IPv4OnlySMTP(mail_server, mail_port, timeout=10) as server:
             stage = "ehlo"
             server.ehlo()
             stage = "starttls"
