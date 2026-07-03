@@ -866,6 +866,20 @@ def create_checkout_order():
     if total <= 0:
         return jsonify({'success': False, 'message': 'Invalid order total.'}), 400
 
+    # TradingView ID is mandatory before payment. Access is granted to this exact
+    # ID and cannot be changed afterwards, so capture/require it up front. A value
+    # sent from checkout is saved to the profile; the order's approval later reads
+    # current_user.tradingview_id.
+    data = request.get_json(silent=True) or {}
+    tv_id = (data.get('tradingview_id') or '').strip()[:MAX_TRADINGVIEW_ID_LEN]
+    if tv_id:
+        current_user.tradingview_id = tv_id
+    if not (current_user.tradingview_id or '').strip():
+        return jsonify({
+            'success': False,
+            'message': 'Please enter your TradingView ID before payment. Access is granted to this ID only and cannot be changed after payment.'
+        }), 400
+
     try:
         stale_cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
         stale_orders = Order.query.filter(
@@ -1038,6 +1052,8 @@ def submit_demo_request():
 
     if not name or not email:
         return jsonify({'success': False, 'message': 'Name and email are required.'}), 400
+    if not tradingview_id:
+        return jsonify({'success': False, 'message': 'TradingView ID is required. Your demo/trial access is granted to this ID only and cannot be changed later.'}), 400
     if len(name) > MAX_NAME_LEN * 2:
         return jsonify({'success': False, 'message': 'Name is too long.'}), 400
     if len(email) > MAX_EMAIL_LEN or not is_valid_email(email):
@@ -1079,6 +1095,9 @@ def submit_demo_request():
             }), 409
 
     try:
+        # Keep the profile's TradingView ID in sync so checkout uses the same value.
+        if user_id is not None and current_user.tradingview_id != tradingview_id:
+            current_user.tradingview_id = tradingview_id
         demo = DemoRequest(
             user_id=user_id,
             script_id=script_id,

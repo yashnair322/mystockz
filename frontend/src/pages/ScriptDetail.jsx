@@ -22,6 +22,12 @@ const ScriptDetail = () => {
   const [demoSubmitting, setDemoSubmitting] = useState(false);
   const [demoRequested, setDemoRequested] = useState(false);
   const [demoToast, setDemoToast] = useState('');
+  const [tvId, setTvId] = useState('');
+  const [tvError, setTvError] = useState('');
+
+  useEffect(() => {
+    if (user?.tradingview_id) setTvId(user.tradingview_id);
+  }, [user]);
 
   useEffect(() => {
     const fetchScriptData = async () => {
@@ -85,9 +91,14 @@ const ScriptDetail = () => {
   const handleDemoRequest = async () => {
     if (!user) { navigate('/login'); return; }
     if (demoRequested) return;
+    if (!tvId.trim()) {
+      setTvError('Please enter your TradingView ID to request a demo.');
+      return;
+    }
+    setTvError('');
     setDemoSubmitting(true);
     try {
-      const res = await api.post('/demo-requests', { script_id: parseInt(id) });
+      const res = await api.post('/demo-requests', { script_id: parseInt(id), tradingview_id: tvId.trim() });
       if (res.data.success) {
         setDemoRequested(true);
         showToast(`Demo requested for ${script.name}. Our team will reach out shortly.`);
@@ -233,11 +244,57 @@ const ScriptDetail = () => {
               )}
             </button>
 
+            {user && !user.is_admin && !demoRequested && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <label
+                  htmlFor="demo-tv-id"
+                  style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--text-primary)' }}
+                >
+                  TradingView ID <span style={{ color: '#f9a8d4' }}>*</span>
+                </label>
+                <input
+                  id="demo-tv-id"
+                  type="text"
+                  value={tvId}
+                  onChange={(e) => { setTvId(e.target.value); if (e.target.value.trim()) setTvError(''); }}
+                  placeholder="e.g. your_tradingview_username"
+                  autoComplete="off"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${tvError ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                    color: 'var(--text-primary)',
+                    fontSize: '0.88rem',
+                  }}
+                />
+                {tvError && (
+                  <div style={{ marginTop: '0.35rem', color: '#fca5a5', fontSize: '0.8rem' }}>{tvError}</div>
+                )}
+                <div
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.6rem 0.8rem',
+                    background: 'rgba(234, 179, 8, 0.08)',
+                    border: '1px solid rgba(234, 179, 8, 0.3)',
+                    borderRadius: '10px',
+                    fontSize: '0.76rem',
+                    lineHeight: '1.5',
+                    color: '#fde68a',
+                  }}
+                >
+                  ⚠️ The demo/trial is granted <strong>only to this TradingView ID</strong> and
+                  <strong> cannot be changed later</strong>. Please enter it carefully.
+                </div>
+              </div>
+            )}
+
             <button
               type="button"
               className="outline-btn"
               onClick={handleDemoRequest}
-              disabled={demoSubmitting || demoRequested}
+              disabled={demoSubmitting || demoRequested || (!!user && !user.is_admin && !tvId.trim())}
               style={{
                 marginTop: '0.75rem',
                 width: '100%',

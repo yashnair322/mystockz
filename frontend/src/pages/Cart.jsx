@@ -12,12 +12,19 @@ const Cart = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [policyError, setPolicyError] = useState('');
+  const [tvId, setTvId] = useState('');
+  const [tvError, setTvError] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchCart();
   }, []);
+
+  // Prefill the TradingView ID from the user's profile when available.
+  useEffect(() => {
+    if (user?.tradingview_id) setTvId(user.tradingview_id);
+  }, [user]);
 
   const fetchCart = async () => {
     try {
@@ -53,18 +60,23 @@ const Cart = () => {
     });
 
   const handleCheckout = async () => {
+    if (!tvId.trim()) {
+      setTvError('Please enter your TradingView ID before payment.');
+      return;
+    }
     if (!policyAccepted) {
       setPolicyError('Please confirm the no-refund policy before continuing.');
       return;
     }
+    setTvError('');
     setPolicyError('');
     setIsProcessing(true);
     try {
       const loaded = await loadRazorpayScript();
       if (!loaded) throw new Error('Unable to load the payment gateway. Please check your connection and try again.');
 
-      // 1. Create order on backend
-      const res = await api.post('/checkout/create-order');
+      // 1. Create order on backend (TradingView ID is required and access is bound to it)
+      const res = await api.post('/checkout/create-order', { tradingview_id: tvId.trim() });
       if (!res.data.success) throw new Error(friendlyError({ response: { data: res.data } }, 'We could not start checkout. Please try again.'));
 
       const orderData = res.data;
@@ -207,6 +219,50 @@ const Cart = () => {
                 <span>₹{cart.total}</span>
               </div>
 
+              <div style={{ marginTop: '1.5rem' }}>
+                <label
+                  htmlFor="tv-id"
+                  style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--text-primary)' }}
+                >
+                  TradingView ID <span style={{ color: '#f9a8d4' }}>*</span>
+                </label>
+                <input
+                  id="tv-id"
+                  type="text"
+                  value={tvId}
+                  onChange={(e) => { setTvId(e.target.value); if (e.target.value.trim()) setTvError(''); }}
+                  placeholder="e.g. your_tradingview_username"
+                  autoComplete="off"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.9rem',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${tvError ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                    color: 'var(--text-primary)',
+                    fontSize: '0.9rem',
+                  }}
+                />
+                {tvError && (
+                  <div style={{ marginTop: '0.4rem', color: '#fca5a5', fontSize: '0.82rem' }}>{tvError}</div>
+                )}
+                <div
+                  style={{
+                    marginTop: '0.6rem',
+                    padding: '0.7rem 0.85rem',
+                    background: 'rgba(234, 179, 8, 0.08)',
+                    border: '1px solid rgba(234, 179, 8, 0.3)',
+                    borderRadius: '10px',
+                    fontSize: '0.78rem',
+                    lineHeight: '1.5',
+                    color: '#fde68a',
+                  }}
+                >
+                  ⚠️ Access will be granted <strong>only to this TradingView ID</strong>. Please double-check it —
+                  <strong> it cannot be changed or corrected after payment.</strong>
+                </div>
+              </div>
+
               <label
                 style={{
                   display: 'flex',
@@ -261,11 +317,11 @@ const Cart = () => {
               <button
                 className="btn-shine w-full"
                 onClick={handleCheckout}
-                disabled={isProcessing || !policyAccepted}
+                disabled={isProcessing || !policyAccepted || !tvId.trim()}
                 style={{
                   marginTop: '1rem',
-                  opacity: !policyAccepted ? 0.6 : 1,
-                  cursor: !policyAccepted ? 'not-allowed' : 'pointer',
+                  opacity: (!policyAccepted || !tvId.trim()) ? 0.6 : 1,
+                  cursor: (!policyAccepted || !tvId.trim()) ? 'not-allowed' : 'pointer',
                 }}
               >
                 {isProcessing ? <Loader className="spin" size={20} /> : <CreditCard size={20} />}
