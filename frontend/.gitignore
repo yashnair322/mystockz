@@ -8,7 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist is intentionally committed so the Flask server (Railway) can serve the built frontend
+# dist
 dist-ssr
 *.local
 

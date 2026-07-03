@@ -9,8 +9,10 @@ __pycache__/
 *$py.class
 *.so
 *.egg-info/
-dist/
-build/
+# Anchored to repo root so Python packaging output is ignored,
+# but the Flask-served frontend build (frontend/dist) is NOT.
+/dist/
+/build/
 venv/
 .venv/
 
