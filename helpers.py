@@ -209,34 +209,48 @@ def detect_image_type(file_storage):
 # Email
 # ──────────────────────────────────────────────────────────────
 
-class _IPv4OnlySMTP(smtplib.SMTP):
-    """smtplib.SMTP that connects over IPv4 only.
+def _connect_ipv4(host, port, timeout, source_address=None):
+    """Open a TCP socket to host:port over IPv4 only.
 
-    Some container platforms (e.g. Railway) can't route IPv6 egress. When the
-    mail server also has an AAAA record, the default resolver may pick IPv6 and
-    the connect fails with OSError errno 101 ("Network is unreachable"). Forcing
-    IPv4 sidesteps that. TLS still verifies against the original hostname because
-    ``self._host`` is unchanged — only the socket's address family is constrained.
+    Some container platforms (e.g. Railway) can't route IPv6 egress; when the
+    mail server also has an AAAA record the default resolver may pick IPv6 and
+    connect() fails with OSError errno 101 ("Network is unreachable"). Forcing
+    IPv4 sidesteps that.
     """
+    last_err = None
+    for family, socktype, proto, _canon, sa in socket.getaddrinfo(
+            host, port, socket.AF_INET, socket.SOCK_STREAM):
+        sock = None
+        try:
+            sock = socket.socket(family, socktype, proto)
+            if isinstance(timeout, (int, float)):
+                sock.settimeout(timeout)
+            if source_address:
+                sock.bind(source_address)
+            sock.connect(sa)
+            return sock
+        except OSError as err:
+            last_err = err
+            if sock is not None:
+                sock.close()
+    raise last_err if last_err else OSError(f"no IPv4 address for {host!r}")
+
+
+class _IPv4OnlySMTP(smtplib.SMTP):
+    """STARTTLS SMTP (port 587) that connects over IPv4 only. TLS still verifies
+    against the original hostname because ``self._host`` is unchanged."""
 
     def _get_socket(self, host, port, timeout):
-        last_err = None
-        for family, socktype, proto, _canon, sa in socket.getaddrinfo(
-                host, port, socket.AF_INET, socket.SOCK_STREAM):
-            sock = None
-            try:
-                sock = socket.socket(family, socktype, proto)
-                if isinstance(timeout, (int, float)):
-                    sock.settimeout(timeout)
-                if self.source_address:
-                    sock.bind(self.source_address)
-                sock.connect(sa)
-                return sock
-            except OSError as err:
-                last_err = err
-                if sock is not None:
-                    sock.close()
-        raise last_err if last_err else OSError(f"no IPv4 address for {host!r}")
+        return _connect_ipv4(host, port, timeout, self.source_address)
+
+
+class _IPv4OnlySMTPSSL(smtplib.SMTP_SSL):
+    """Implicit-SSL SMTP (port 465) that connects over IPv4 only, then wraps the
+    socket in TLS verified against the original hostname."""
+
+    def _get_socket(self, host, port, timeout):
+        sock = _connect_ipv4(host, port, timeout, self.source_address)
+        return self.context.wrap_socket(sock, server_hostname=self._host)
 
 
 def _send_email(to_email, subject, body):
@@ -263,12 +277,16 @@ def _send_email(to_email, subject, body):
         msg.attach(MIMEText(body, 'plain'))
 
         stage = "connect"
-        with _IPv4OnlySMTP(mail_server, mail_port, timeout=10) as server:
+        # Port 465 = implicit SSL (SMTP_SSL); anything else (587) = STARTTLS.
+        use_ssl = int(mail_port) == 465
+        smtp_cls = _IPv4OnlySMTPSSL if use_ssl else _IPv4OnlySMTP
+        with smtp_cls(mail_server, mail_port, timeout=10) as server:
             stage = "ehlo"
             server.ehlo()
-            stage = "starttls"
-            server.starttls()
-            server.ehlo()
+            if not use_ssl:
+                stage = "starttls"
+                server.starttls()
+                server.ehlo()
             stage = "login"
             server.login(mail_username, mail_password)
             stage = "send"
