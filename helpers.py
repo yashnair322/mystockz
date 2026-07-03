@@ -211,6 +211,7 @@ def detect_image_type(file_storage):
 def _send_email(to_email, subject, body):
     """Send an email. Returns True on success, False on failure. No SMTP credentials
     or response payloads are ever logged."""
+    stage = "init"
     try:
         mail_username = current_app.config.get('MAIL_USERNAME')
         mail_password = current_app.config.get('MAIL_PASSWORD')
@@ -230,18 +231,35 @@ def _send_email(to_email, subject, body):
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
+        stage = "connect"
         with smtplib.SMTP(mail_server, mail_port, timeout=10) as server:
+            stage = "ehlo"
             server.ehlo()
+            stage = "starttls"
             server.starttls()
             server.ehlo()
+            stage = "login"
             server.login(mail_username, mail_password)
+            stage = "send"
             server.send_message(msg)
 
         logger.info("Email dispatched.")
         return True
 
     except Exception as e:
-        logger.error(f"Failed to send email: {type(e).__name__}")
+        # Diagnostic detail — safe: the password is never included. The stage + errno
+        # pinpoint the cause:
+        #   stage 'connect' + errno 101/110/111 -> host is blocking outbound SMTP (or unreachable)
+        #   stage 'starttls' (SSL error)         -> wrong port/mode (e.g. 465 with STARTTLS)
+        #   stage 'login'  (SMTPAuthenticationError) -> wrong MAIL_USERNAME / MAIL_PASSWORD
+        #   stage 'init'   (gaierror)            -> DNS can't resolve MAIL_SERVER
+        errno = getattr(e, "errno", None)
+        logger.error(
+            f"Failed to send email at stage '{stage}' to "
+            f"{current_app.config.get('MAIL_SERVER', 'smtp.gmail.com')}:"
+            f"{current_app.config.get('MAIL_PORT', 587)} -> "
+            f"{type(e).__name__} (errno={errno}): {e}"
+        )
         return False
 
 
