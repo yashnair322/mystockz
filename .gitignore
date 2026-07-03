@@ -1,0 +1,46 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database
+instance/
+*.db
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Uploads (user-generated content)
+static/uploads/
+
+# Obfuscated JS (regenerated on startup)
+static/js/dist/
+
+# Node
+node_modules/
+package-lock.json
+
+# Test / tooling artifacts
+frontend/csrf.json
+scratch/pip-audit-cache/
+scratch/tmp/

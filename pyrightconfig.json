@@ -1,0 +1,17 @@
+{
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportGeneralTypeIssues": "warning",
+  "reportAttributeAccessIssue": "none",
+  "reportCallIssue": "none",
+  "reportArgumentType": "none",
+  "reportReturnType": "none",
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.11",
+  "exclude": [
+    "venv",
+    "__pycache__",
+    "node_modules"
+  ]
+}

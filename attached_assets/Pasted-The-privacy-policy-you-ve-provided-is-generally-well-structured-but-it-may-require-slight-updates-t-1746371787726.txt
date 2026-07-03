@@ -1,0 +1,86 @@
+The privacy policy you've provided is generally well-structured, but it may require slight updates to reflect the **educational and non-financial advisory** nature of your platform, especially when mentioning payment data and third-party services.
+
+Here’s an updated version:
+
+---
+
+### ✅ **Updated Privacy Policy (Educational/Non-Trading Context)**
+
+At \[Website] ("we", "us", or "our"), we are committed to safeguarding your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you visit and interact with our website.
+
+---
+
+### **Information We Collect**
+
+We may collect the following information from users:
+
+* **Email Address**: Collected during sign-up or purchases for communication and account-related purposes.
+* **Payment Information**: Processed securely through third-party payment gateways. We do not store your full payment details on our servers.
+* **Cookies and Usage Data**: We use cookies and similar technologies to enhance your user experience, understand usage patterns, and improve our services.
+
+---
+
+### **How We Use Your Information**
+
+Your information may be used for the following purposes:
+
+* To provide, maintain, and improve our educational resources and services.
+* To securely process payments and manage your account.
+* To enhance user experience and website performance.
+
+---
+
+### **Cookies**
+
+Cookies are small files stored on your device that help improve site functionality. You may choose to disable cookies via your browser settings, but please note that this may affect your ability to use certain features of the site, particularly those related to learning tools and user preferences.
+
+---
+
+### **Third-Party Services**
+
+We may engage trusted third-party services such as payment gateways and analytics providers. These third parties may collect information as governed by their own privacy policies. While we select only reputable partners, we are not responsible for how these third parties handle or use your data.
+
+---
+
+### **Data Security**
+
+We implement standard security measures to protect your personal information. However, no method of transmission over the Internet or method of electronic storage is 100% secure. While we strive to protect your information, we cannot guarantee absolute security.
+
+---
+
+### **User Rights**
+
+As a user, you have the right to:
+
+* **Access or Correct** your personal information.
+* **Request Deletion** of your data, subject to any legal or contractual obligations.
+
+---
+
+### **Changes to This Policy**
+
+We may update this Privacy Policy periodically. Any changes will be posted on this page, and your continued use of the site implies acceptance of those updates.
+
+---
+
+### **Contact Us**
+
+If you have any questions or concerns about this Privacy Policy, please contact us at:
+
+**Email**: [support@wealthify.org.in](mailto:support@wealthify.org.in)
+
+---
+
+### ✅ **Key Updates and Reasons:**
+
+1. **Clarified the Educational Focus**: I added “educational resources and services” instead of generic terms like "services," which helps to maintain the educational positioning.
+
+2. **Emphasized User Rights**: The right to access or delete data was explicitly added to make the policy compliant with data protection regulations like GDPR, which might apply depending on your region.
+
+3. **Security Disclaimer**: Softened the language around data security to indicate efforts to protect data but acknowledging the inherent risks.
+
+4. **Third-Party Service Clarity**: Added that third-party services are selected based on their own privacy policies, making it clear that you’re not in control of third-party data handling.
+
+---
+
+Would you like me to help with any further customization for this policy (e.g., GDPR compliance, CCPA compliance)?
