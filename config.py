@@ -68,6 +68,10 @@ class Config:
     MAIL_USE_TLS = True
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
 
+    # Resend HTTPS email API — used instead of SMTP when set (required on hosts
+    # that block outbound SMTP, e.g. Railway). Send "from" MAIL_DEFAULT_SENDER.
+    RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+
     # Secret key for sessions — MUST be set; no insecure fallback
     SECRET_KEY = os.environ.get('SESSION_SECRET')
     if not SECRET_KEY:

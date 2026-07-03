@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from functools import wraps
 
 import razorpay
+import requests
 from flask import session, redirect, url_for, flash, current_app
 from app import db
 from models import CartItem, Script
@@ -254,8 +255,58 @@ class _IPv4OnlySMTPSSL(smtplib.SMTP_SSL):
 
 
 def _send_email(to_email, subject, body):
-    """Send an email. Returns True on success, False on failure. No SMTP credentials
-    or response payloads are ever logged."""
+    """Send an email. Returns True on success, False on failure.
+
+    Prefers the Resend HTTPS API when RESEND_API_KEY is configured — required on
+    hosts that block outbound SMTP (e.g. Railway). Falls back to direct SMTP
+    otherwise (fine for local dev). No credentials or payloads are ever logged.
+    """
+    if not is_valid_email(to_email):
+        logger.error("Refusing to send to malformed email address")
+        return False
+
+    resend_api_key = current_app.config.get('RESEND_API_KEY')
+    if resend_api_key:
+        sender = (current_app.config.get('MAIL_DEFAULT_SENDER')
+                  or current_app.config.get('MAIL_USERNAME'))
+        if not sender:
+            logger.error("MAIL_DEFAULT_SENDER (or MAIL_USERNAME) must be set to send via Resend")
+            return False
+        return _send_via_resend(resend_api_key, sender, to_email, subject, body)
+
+    return _send_via_smtp(to_email, subject, body)
+
+
+def _send_via_resend(api_key, sender, to_email, subject, body):
+    """Send via the Resend HTTPS API (port 443, so it works where outbound SMTP
+    is blocked). The API key and message body are never logged."""
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "from": sender,
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=15,
+        )
+    except Exception as e:
+        logger.error(f"Failed to reach Resend API: {type(e).__name__}: {e}")
+        return False
+
+    if resp.status_code in (200, 201):
+        logger.info("Email dispatched via Resend.")
+        return True
+    # Resend returns a JSON error message; log status + a short snippet only.
+    logger.error(f"Resend API error {resp.status_code}: {resp.text[:200]}")
+    return False
+
+
+def _send_via_smtp(to_email, subject, body):
+    """Direct-SMTP fallback, used when RESEND_API_KEY is not set (e.g. local dev).
+    No SMTP credentials or response payloads are ever logged."""
     stage = "init"
     try:
         mail_username = current_app.config.get('MAIL_USERNAME')
@@ -265,9 +316,6 @@ def _send_email(to_email, subject, body):
 
         if not mail_username or not mail_password:
             logger.error("Missing SMTP credentials")
-            return False
-        if not is_valid_email(to_email):
-            logger.error("Refusing to send to malformed email address")
             return False
 
         msg = MIMEMultipart()
