@@ -50,7 +50,7 @@ const Refund = () => {
           <h3 style={{ color: '#f472b6', margin: '0.75rem 0 0.25rem', fontWeight: 'bold', fontSize: '1.15rem' }}>Contacting Support</h3>
           <p>
             For any billing-related concerns, users may contact our support team within <strong>7 days of the transaction date</strong> at{' '}
-            <a href="mailto:support@mystockz.in" style={{ color: '#f9a8d4' }}>support@mystockz.in</a>.
+            <a href="mailto:info@mystockz.in" style={{ color: '#f9a8d4' }}>info@mystockz.in</a>.
           </p>
 
           <p>

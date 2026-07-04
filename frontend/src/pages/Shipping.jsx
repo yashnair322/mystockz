@@ -44,7 +44,7 @@ const Shipping = () => {
 
           <h4 style={{ color: '#fbbf24', margin: '1rem 0 0.5rem', fontWeight: 'bold' }}>Support</h4>
           <p style={{ margin: 0 }}>
-            If you have not received access to your purchased resources within 2 business days, please contact our support team immediately at <strong>support@mystockz.in</strong>.
+            If you have not received access to your purchased resources within 2 business days, please contact our support team immediately at <strong>info@mystockz.in</strong>.
           </p>
         </div>
       </motion.div>

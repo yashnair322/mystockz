@@ -62,7 +62,7 @@ const Privacy = () => {
 
           <h4 style={{ color: '#34d399', margin: '1rem 0 0.5rem', fontWeight: 'bold' }}>Contact Us</h4>
           <p>If you have any questions or concerns about this Privacy Policy, please contact us at:</p>
-          <p style={{ margin: 0 }}><strong>Email:</strong> support@mystockz.in</p>
+          <p style={{ margin: 0 }}><strong>Email:</strong> info@mystockz.in</p>
         </div>
       </motion.div>
     </div>
