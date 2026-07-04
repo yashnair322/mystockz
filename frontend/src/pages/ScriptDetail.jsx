@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Check, ArrowLeft, Loader, Shield, Zap,
   Sparkles, TrendingUp, PlayCircle, CheckCircle2,
+  MessageSquare, Trash2, Send,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api, { friendlyError } from '../utils/api';
@@ -25,6 +26,11 @@ const ScriptDetail = () => {
   const [demoToast, setDemoToast] = useState('');
   const [tvId, setTvId] = useState('');
   const [tvError, setTvError] = useState('');
+  const [comments, setComments] = useState([]);
+  const [canComment, setCanComment] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState('');
 
   useEffect(() => {
     if (user?.tradingview_id) setTvId(user.tradingview_id);
@@ -68,6 +74,55 @@ const ScriptDetail = () => {
     };
     fetchScriptData();
   }, [id, user]);
+
+  const fetchComments = async () => {
+    try {
+      const res = await api.get(`/scripts/${id}/comments`);
+      if (res.data.success) {
+        setComments(res.data.comments || []);
+        setCanComment(!!res.data.can_comment);
+      }
+    } catch (err) {
+      console.error('Failed to load comments', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user]);
+
+  const handlePostComment = async () => {
+    const text = commentText.trim();
+    if (!text) { setCommentError('Please write something first.'); return; }
+    setCommentError('');
+    setCommentSubmitting(true);
+    try {
+      const res = await api.post(`/scripts/${id}/comments`, { content: text });
+      if (res.data.success) {
+        setCommentText('');
+        if (res.data.comment) setComments((prev) => [res.data.comment, ...prev]);
+        else fetchComments();
+      } else {
+        setCommentError(friendlyError({ response: { data: res.data } }, 'Could not post your comment.'));
+      }
+    } catch (err) {
+      setCommentError(friendlyError(err, 'Could not post your comment.'));
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const res = await api.delete(`/comments/${commentId}`);
+      if (res.data.success) {
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+      }
+    } catch (err) {
+      console.error('Failed to delete comment', err);
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!user) { navigate('/login'); return; }
@@ -349,6 +404,85 @@ const ScriptDetail = () => {
             </div>
           )}
         </motion.div>
+      </div>
+
+      {/* ============= COMMENTS / REVIEWS ============= */}
+      <div className="comments-section" style={{ maxWidth: '900px', margin: '3rem auto 0', padding: '0 1rem' }}>
+        <h3 className="section-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <MessageSquare size={22} /> What buyers are <span className="gradient-text">saying</span>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 400 }}>({comments.length})</span>
+        </h3>
+
+        {canComment ? (
+          <div className="glass-card" style={{ padding: '1.25rem', marginTop: '1rem' }}>
+            <textarea
+              value={commentText}
+              onChange={(e) => { setCommentText(e.target.value); if (e.target.value.trim()) setCommentError(''); }}
+              placeholder="Share your experience with this indicator…"
+              rows={3}
+              maxLength={2000}
+              style={{
+                width: '100%', resize: 'vertical', padding: '0.75rem 0.9rem', borderRadius: '10px',
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${commentError ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                color: 'var(--text-primary)', fontSize: '0.92rem', fontFamily: 'inherit',
+              }}
+            />
+            {commentError && (
+              <div style={{ marginTop: '0.4rem', color: '#fca5a5', fontSize: '0.82rem' }}>{commentError}</div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+              <button
+                className="btn-shine"
+                onClick={handlePostComment}
+                disabled={commentSubmitting || !commentText.trim()}
+                style={{ opacity: (commentSubmitting || !commentText.trim()) ? 0.6 : 1 }}
+              >
+                {commentSubmitting ? <Loader className="spin" size={18} /> : <Send size={18} />}
+                {commentSubmitting ? 'Posting…' : 'Post comment'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-card" style={{ padding: '1rem 1.25rem', marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            {user
+              ? '🔒 Only buyers of this indicator can post a comment — purchase it to share your experience.'
+              : '🔒 Purchase this indicator to leave a comment. You can read what buyers say below.'}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+          {comments.length === 0 ? (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', padding: '0.5rem 0' }}>
+              No comments yet — be the first to share your experience after purchasing.
+            </div>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="glass-card" style={{ padding: '1rem 1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{c.author}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                      {c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                    </span>
+                    {c.is_mine && (
+                      <button
+                        onClick={() => handleDeleteComment(c.id)}
+                        title="Delete your comment"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', display: 'flex', alignItems: 'center', padding: 0 }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.92rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {c.content}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       <AnimatePresence>

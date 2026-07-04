@@ -231,7 +231,7 @@ def create_app():
         return jsonify({'success': False, 'message': 'Unauthorized. Please log in.'}), 401
 
     with app.app_context():
-        from models import User, Admin, Script, Order, OrderItem, Cart, CartItem, DemoRequest  # noqa: F401
+        from models import User, Admin, Script, Order, OrderItem, Cart, CartItem, DemoRequest, Comment  # noqa: F401
 
         db.create_all()
         _migrate_added_columns()

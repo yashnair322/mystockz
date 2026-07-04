@@ -265,3 +265,23 @@ class DemoRequest(db.Model):
 
     def __repr__(self):
         return f'<DemoRequest {self.email} script={self.script_id} status={self.status}>'
+
+
+class Comment(db.Model):
+    """A comment/review left on a script by a user who purchased it.
+    Publicly visible to everyone; only buyers of that script may post."""
+    __tablename__ = 'comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    script_id = db.Column(db.Integer, db.ForeignKey('scripts.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    # Reserved for future admin moderation — hidden comments aren't returned.
+    is_hidden = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship('User', backref=db.backref('comments', lazy=True))
+    script = db.relationship('Script', backref=db.backref('comments', lazy=True, cascade='all, delete-orphan'))
+
+    def __repr__(self):
+        return f'<Comment {self.id} script={self.script_id} user={self.user_id}>'

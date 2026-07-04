@@ -12,7 +12,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy.exc import IntegrityError
 
-from models import Script, User, Admin, Cart, CartItem, Order, OrderItem, UserScript, Contact, DemoRequest
+from models import Script, User, Admin, Cart, CartItem, Order, OrderItem, UserScript, Contact, DemoRequest, Comment
 from app import db, limiter
 from helpers import (
     generate_verification_code, send_verification_email, get_cart_total,
@@ -33,6 +33,7 @@ MAX_MESSAGE_LEN = 5000
 MAX_TRADINGVIEW_ID_LEN = 128
 MAX_PHONE_LEN = 32
 DEMO_MESSAGE_MAX = 2000
+MAX_COMMENT_LEN = 2000
 
 # Session keys grouped so they can be cleared together
 _REG_SESSION_KEYS = (
@@ -614,6 +615,111 @@ def get_script(script_id):
             raise
         logger.exception("Error fetching single script API")
         return jsonify({'success': False, 'error': 'An internal error occurred.'}), 500
+
+
+# ---------------------------------------------------------------------------
+# Script comments / reviews — publicly readable; only buyers may post.
+# ---------------------------------------------------------------------------
+
+def _comment_author_name(user):
+    """A friendly, minimally-identifying display name for a comment author."""
+    if user and user.first_name:
+        last = f" {user.last_name[0]}." if user.last_name else ""
+        return f"{user.first_name}{last}".strip()
+    return user.username if user else "User"
+
+
+def _user_owns_script(user_id, script_id):
+    """True if the user has purchased this script (a UserScript row exists)."""
+    return db.session.query(UserScript.id).filter_by(
+        user_id=user_id, script_id=script_id
+    ).first() is not None
+
+
+@api_bp.route('/scripts/<int:script_id>/comments', methods=['GET'])
+def get_script_comments(script_id):
+    script = Script.query.get(script_id)
+    if not script or not script.is_active:
+        return jsonify({'success': False, 'message': 'Script not found.'}), 404
+
+    can_comment = False
+    my_id = None
+    if current_user.is_authenticated:
+        my_id = current_user.id
+        can_comment = _user_owns_script(current_user.id, script_id)
+
+    comments = (Comment.query
+                .filter_by(script_id=script_id, is_hidden=False)
+                .order_by(Comment.created_at.desc())
+                .all())
+    return jsonify({
+        'success': True,
+        'can_comment': can_comment,
+        'comments': [{
+            'id': c.id,
+            'author': _comment_author_name(c.user),
+            'content': c.content,
+            'created_at': c.created_at.isoformat() if c.created_at else None,
+            'is_mine': c.user_id == my_id,
+        } for c in comments],
+    })
+
+
+@api_bp.route('/scripts/<int:script_id>/comments', methods=['POST'])
+@login_required
+@limiter.limit("10 per hour")
+def add_script_comment(script_id):
+    script = Script.query.get(script_id)
+    if not script or not script.is_active:
+        return jsonify({'success': False, 'message': 'Script not found.'}), 404
+
+    if not _user_owns_script(current_user.id, script_id):
+        return jsonify({'success': False, 'message': 'Only buyers of this indicator can leave a comment.'}), 403
+
+    data = request.get_json(silent=True) or {}
+    content = (data.get('content') or '').strip()
+    if not content:
+        return jsonify({'success': False, 'message': 'Comment cannot be empty.'}), 400
+    if len(content) > MAX_COMMENT_LEN:
+        return jsonify({'success': False, 'message': 'Comment is too long.'}), 400
+
+    try:
+        comment = Comment(script_id=script_id, user_id=current_user.id, content=content)
+        db.session.add(comment)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Comment posted.',
+            'comment': {
+                'id': comment.id,
+                'author': _comment_author_name(current_user),
+                'content': comment.content,
+                'created_at': comment.created_at.isoformat() if comment.created_at else None,
+                'is_mine': True,
+            },
+        })
+    except Exception:
+        db.session.rollback()
+        logger.exception("Error posting comment")
+        return jsonify({'success': False, 'message': 'Could not post your comment. Please try again.'}), 500
+
+
+@api_bp.route('/comments/<int:comment_id>', methods=['DELETE'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get(comment_id)
+    if not comment:
+        return jsonify({'success': False, 'message': 'Comment not found.'}), 404
+    if comment.user_id != current_user.id:
+        return jsonify({'success': False, 'message': 'You can only delete your own comment.'}), 403
+    try:
+        db.session.delete(comment)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Comment deleted.'})
+    except Exception:
+        db.session.rollback()
+        logger.exception("Error deleting comment")
+        return jsonify({'success': False, 'message': 'Could not delete the comment.'}), 500
 
 
 # ---------------------------------------------------------------------------
