@@ -19,6 +19,8 @@ import Refund from './pages/Refund';
 import Shipping from './pages/Shipping';
 import ContactUs from './pages/ContactUs';
 import NotFound from './pages/NotFound';
+import usePageMeta from './utils/usePageMeta';
+import { getMetaForPath } from './utils/seo';
 
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
@@ -45,9 +47,23 @@ const PageTransitions = ({ children }) => {
   );
 };
 
+/**
+ * Sets a unique <title>, meta description, and robots directive per route.
+ * Script detail pages are owned by ScriptDetail (which sets the specific
+ * script's meta), so this manager disables itself there to avoid clobbering it.
+ */
+const SeoManager = () => {
+  const { pathname } = useLocation();
+  const meta = getMetaForPath(pathname);
+  const isScriptPage = pathname.startsWith('/scripts/');
+  usePageMeta(meta.title, meta.description, { noindex: !!meta.noindex, enabled: !isScriptPage });
+  return null;
+};
+
 function App() {
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <SeoManager />
       <AuroraBackground />
       <NoiseOverlay />
       <ScrollProgress />

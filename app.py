@@ -1,7 +1,7 @@
 import os
 import logging
 import hmac
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
@@ -250,6 +250,53 @@ def create_app():
         @app.route('/static/<path:path>')
         def serve_static(path):
             return send_from_directory(os.path.join(app.root_path, 'static'), path)
+
+        # ------------------------------------------------------------------
+        # SEO: robots.txt + sitemap.xml
+        # Only public, non-sensitive routes are exposed. Admin, API, auth and
+        # account pages are explicitly disallowed and never listed.
+        # ------------------------------------------------------------------
+        SITE_BASE_URL = 'https://www.mystockz.in'
+
+        @app.route('/robots.txt')
+        def robots_txt():
+            body = (
+                "User-agent: *\n"
+                "Disallow: /admin\n"
+                "Disallow: /api/\n"
+                "Disallow: /dashboard\n"
+                "Disallow: /purchases\n"
+                "Disallow: /profile\n"
+                "Disallow: /tradingview\n"
+                "Disallow: /cart\n"
+                "Disallow: /verify-email\n"
+                "Disallow: /forgot-password\n"
+                "Disallow: /auth/\n"
+                "\n"
+                f"Sitemap: {SITE_BASE_URL}/sitemap.xml\n"
+            )
+            return Response(body, mimetype='text/plain')
+
+        @app.route('/sitemap.xml')
+        def sitemap_xml():
+            from xml.sax.saxutils import escape
+            from models import Script
+
+            paths = ['/', '/resources', '/terms', '/privacy', '/refund', '/shipping', '/contact']
+            try:
+                active = Script.query.filter_by(is_active=True).all()
+                paths.extend(f'/scripts/{s.id}' for s in active)
+            except Exception:
+                logger.exception("sitemap: could not load scripts")
+
+            lines = [
+                '<?xml version="1.0" encoding="UTF-8"?>',
+                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+            ]
+            for p in paths:
+                lines.append(f'  <url><loc>{escape(SITE_BASE_URL + p)}</loc></url>')
+            lines.append('</urlset>')
+            return Response('\n'.join(lines) + '\n', mimetype='application/xml')
 
         # SPA fallback
         @app.route('/', defaults={'path': ''})

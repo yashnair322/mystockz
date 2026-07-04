@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api, { friendlyError } from '../utils/api';
+import usePageMeta from '../utils/usePageMeta';
 import '../styles/ScriptDetail.css';
 
 const ScriptDetail = () => {
@@ -28,6 +29,14 @@ const ScriptDetail = () => {
   useEffect(() => {
     if (user?.tradingview_id) setTvId(user.tradingview_id);
   }, [user]);
+
+  // Per-script SEO: unique title + description once the script has loaded.
+  usePageMeta(
+    script ? script.name : 'Trading Indicator',
+    script
+      ? (script.description || `${script.name} — a premium TradingView indicator on Mystockz.`).slice(0, 160)
+      : 'Explore this premium TradingView indicator on Mystockz — features, pricing, and a free demo option.',
+  );
 
   useEffect(() => {
     const fetchScriptData = async () => {
