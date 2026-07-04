@@ -588,7 +588,6 @@
   flex-direction: column;
   isolation: isolate;
   transform-style: preserve-3d;
-  will-change: transform;
 }
 
 /* gradient border on hover */
