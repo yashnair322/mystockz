@@ -125,7 +125,7 @@ const Footer = () => {
             fontSize: '0.95rem',
             letterSpacing: '0.02em',
           }}>
-            Visual Market Intelligence for Smarter Trading
+            Visual Market Intelligence for Smart Trading
           </p>
           <p style={{ lineHeight: 1.7, fontSize: '0.95rem', maxWidth: '320px' }}>
             Educational platform providing market analysis tools and technical

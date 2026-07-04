@@ -304,7 +304,7 @@ const Home = () => {
           >
             <span className="badge-dot" />
             <Sparkles size={14} />
-            Visual Market Intelligence for Smarter Trading
+            Visual Market Intelligence for Smart Trading
           </motion.div>
 
           <motion.h1
@@ -314,7 +314,7 @@ const Home = () => {
             className="hero-title"
           >
             Visual Market Intelligence<br />
-            for <span className="gradient-text">Smarter Trading</span>
+            for <span className="gradient-text">Smart Trading</span>
           </motion.h1>
 
           <motion.p
