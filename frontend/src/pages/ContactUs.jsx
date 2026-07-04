@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Mail, Phone, MapPin, Contact, Send,
+  Mail, Phone, Contact, Send,
   AlertCircle, CheckCircle, Loader,
 } from 'lucide-react';
 import api, { friendlyError } from '../utils/api';
@@ -68,18 +68,8 @@ const ContactUs = () => {
           style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2rem', justifyContent: 'center' }}
         >
           {[
-            { icon: Mail, label: 'EMAIL US', value: 'support@mystockz.in', href: 'mailto:support@mystockz.in' },
-            { icon: Phone, label: 'CALL US', value: '+91 8160106672', href: 'tel:+918160106672' },
-            {
-              icon: MapPin, label: 'OUR ADDRESS',
-              value: (
-                <address style={{ fontStyle: 'normal', color: 'var(--text-primary)', fontSize: '1rem', lineHeight: 1.6 }}>
-                  Sopan Habitat B-202, Sadhuvaswani Road<br />
-                  Near Patidar Chowk<br />
-                  Rajkot, Gujarat, India
-                </address>
-              ),
-            },
+            { icon: Mail, label: 'EMAIL US', value: 'info@mystockz.in', href: 'mailto:info@mystockz.in' },
+            { icon: Phone, label: 'CALL US', value: '+91 9537517099', href: 'tel:+919537517099' },
           ].map(({ icon: Icon, label, value, href }, i) => (
             <motion.div
               key={label}
