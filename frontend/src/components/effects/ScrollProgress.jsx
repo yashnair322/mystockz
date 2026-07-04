@@ -16,6 +16,8 @@ const ScrollProgress = () => {
     let rafId = 0;
     let scheduled = false;
     let lastProgress = -1;
+    let idleTimer = 0;
+    const root = document.documentElement;
 
     const update = () => {
       scheduled = false;
@@ -30,6 +32,13 @@ const ScrollProgress = () => {
     };
 
     const onScroll = () => {
+      // Pause the most paint-expensive effects (card backdrop-blur + noise
+      // blend) only while actively scrolling; restore them shortly after the
+      // scroll stops, so the page looks identical at rest.
+      root.classList.add('is-scrolling');
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => root.classList.remove('is-scrolling'), 160);
+
       if (scheduled) return;
       scheduled = true;
       rafId = requestAnimationFrame(update);
@@ -42,6 +51,8 @@ const ScrollProgress = () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(rafId);
+      clearTimeout(idleTimer);
+      root.classList.remove('is-scrolling');
     };
   }, []);
 
