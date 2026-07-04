@@ -413,7 +413,7 @@ const ScriptDetail = () => {
           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 400 }}>({comments.length})</span>
         </h3>
 
-        {canComment ? (
+        {canComment && (
           <div className="glass-card" style={{ padding: '1.25rem', marginTop: '1rem' }}>
             <textarea
               value={commentText}
@@ -442,12 +442,6 @@ const ScriptDetail = () => {
                 {commentSubmitting ? 'Posting…' : 'Post comment'}
               </button>
             </div>
-          </div>
-        ) : (
-          <div className="glass-card" style={{ padding: '1rem 1.25rem', marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            {user
-              ? '🔒 Only buyers of this indicator can post a comment — purchase it to share your experience.'
-              : '🔒 Purchase this indicator to leave a comment. You can read what buyers say below.'}
           </div>
         )}
 
