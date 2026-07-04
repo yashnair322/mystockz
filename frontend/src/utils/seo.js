@@ -1,6 +1,9 @@
 // Central SEO metadata. Every route maps to a UNIQUE title + meta description.
 // Dynamic script pages (/scripts/:id) are overridden by ScriptDetail once the
 // script loads; this file only provides their generic fallback.
+//
+// We intentionally do not mark any page `noindex` — public pages are indexable
+// and non-public paths are excluded from crawling via robots.txt instead.
 
 export const SITE_NAME = 'Mystockz';
 
@@ -48,49 +51,43 @@ const META = {
     title: 'Login',
     description:
       'Sign in to your Mystockz account to access your purchased indicators, subscriptions, and dashboard.',
-    noindex: true,
   },
   '/register': {
     title: 'Create Account',
     description:
       'Create a free Mystockz account to buy premium indicators, request demos, and manage your subscriptions.',
-    noindex: true,
   },
   '/forgot-password': {
     title: 'Reset Password',
     description: 'Securely reset the password for your Mystockz account.',
-    noindex: true,
   },
   '/verify-email': {
     title: 'Verify Email',
     description: 'Verify your email address to activate your Mystockz account.',
-    noindex: true,
   },
   '/cart': {
     title: 'Cart',
     description: 'Review the Mystockz indicators in your cart and complete your checkout securely.',
-    noindex: true,
   },
   '/dashboard': {
     title: 'Dashboard',
     description:
       'Your Mystockz dashboard — manage subscriptions, your TradingView ID, and account settings.',
-    noindex: true,
   },
 };
 
 const DASHBOARD_ALIASES = ['/purchases', '/profile', '/tradingview', '/tradingview-id'];
 
-/** Returns { title, description, noindex } for a given pathname. */
+/** Returns { title, description } for a given pathname. */
 export function getMetaForPath(pathname) {
   if (META[pathname]) return META[pathname];
   if (DASHBOARD_ALIASES.includes(pathname)) return META['/dashboard'];
   if (pathname === '/ContactUs') return META['/contact'];
   if (pathname === '/auth/admin/login') {
-    return { title: 'Admin Login', description: 'Restricted administrator sign-in for Mystockz.', noindex: true };
+    return { title: 'Admin Login', description: 'Restricted administrator sign-in for Mystockz.' };
   }
   if (pathname.startsWith('/admin')) {
-    return { title: 'Admin', description: 'Mystockz administration area.', noindex: true };
+    return { title: 'Admin', description: 'Mystockz administration area.' };
   }
   if (pathname.startsWith('/scripts/')) {
     // Generic fallback; ScriptDetail overrides with the specific script.
@@ -104,6 +101,5 @@ export function getMetaForPath(pathname) {
     title: 'Page Not Found',
     description:
       "The page you're looking for could not be found. Explore Mystockz's premium trading tools instead.",
-    noindex: true,
   };
 }

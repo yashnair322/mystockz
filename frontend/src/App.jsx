@@ -56,7 +56,7 @@ const SeoManager = () => {
   const { pathname } = useLocation();
   const meta = getMetaForPath(pathname);
   const isScriptPage = pathname.startsWith('/scripts/');
-  usePageMeta(meta.title, meta.description, { noindex: !!meta.noindex, enabled: !isScriptPage });
+  usePageMeta(meta.title, meta.description, { enabled: !isScriptPage });
   return null;
 };
 
